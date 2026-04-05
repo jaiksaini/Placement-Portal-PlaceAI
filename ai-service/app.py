@@ -532,7 +532,8 @@ def analyze_resume():
         'nice_count':       sum(1 for s in all_suggestions if s['priority'] == 'nice'),
     })
 
-
 if __name__ == '__main__':
-    print("AI Skill Matching Service starting on port 8000...")
-    app.run(host='0.0.0.0', port=8000, debug=True)
+    import os
+    port = int(os.environ.get('PORT', 8000))
+    print(f"AI Skill Matching Service starting on port {port}...")
+    app.run(host='0.0.0.0', port=port, debug=False)
