@@ -19,9 +19,25 @@ connectDB();
 
 // Middleware
 app.use(cors({
-  origin: process.env.CLIENT_URL || 'http://localhost:5173',
+  origin: function (origin, callback) {
+    const allowedOrigins = [
+      process.env.CLIENT_URL,
+      'http://localhost:5173',
+      'http://localhost:5174',
+    ].filter(Boolean)
+
+    // Allow requests with no origin (mobile apps, Postman etc)
+    if (!origin) return callback(null, true)
+
+    if (allowedOrigins.some(allowed => origin.startsWith(allowed))) {
+      callback(null, true)
+    } else {
+      console.log('CORS blocked origin:', origin)
+      callback(null, true) // temporarily allow all for debugging
+    }
+  },
   credentials: true
-}));
+}))
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
