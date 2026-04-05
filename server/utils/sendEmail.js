@@ -1,59 +1,76 @@
 const nodemailer = require('nodemailer');
+const { Resend } = require('resend');
 
 let transporter = null;
 
-async function getTransporter() {
-  if (transporter) return transporter;
-
-  // If no email credentials set, use Ethereal (fake test email service)
-  if (!process.env.EMAIL_USER) {
-    console.log('📧 No EMAIL_USER set — using Ethereal test account');
-    const testAccount = await nodemailer.createTestAccount();
-    transporter = nodemailer.createTransport({
-      host: 'smtp.ethereal.email',
-      port: 587,
-      secure: false,
-      auth: {
-        user: testAccount.user,
-        pass: testAccount.pass,
-      },
+async function sendEmail({ to, subject, html }) {
+  // Use Resend if API key is set (production on Render)
+  if (process.env.RESEND_API_KEY) {
+    const resend = new Resend(process.env.RESEND_API_KEY);
+    const { data, error } = await resend.emails.send({
+      from: process.env.EMAIL_FROM || 'PlaceAI <onboarding@resend.dev>',
+      to,
+      subject,
+      html,
     });
-    console.log(`📧 Ethereal test account: ${testAccount.user}`);
-    return transporter;
+    if (error) {
+      console.error('Resend error:', error);
+      throw new Error(error.message);
+    }
+    console.log(`📧 Email sent via Resend to ${to}`);
+    return data;
   }
 
-  // Use real SMTP (Gmail etc.)
-  transporter = nodemailer.createTransport({
-    host: process.env.EMAIL_HOST || 'smtp.gmail.com',
-    port: parseInt(process.env.EMAIL_PORT) || 587,
+  // Use Gmail if EMAIL_USER is set
+  if (process.env.EMAIL_USER) {
+    if (!transporter) {
+      transporter = nodemailer.createTransport({
+        host: process.env.EMAIL_HOST || 'smtp.gmail.com',
+        port: parseInt(process.env.EMAIL_PORT) || 587,
+        secure: false,
+        auth: {
+          user: process.env.EMAIL_USER,
+          pass: process.env.EMAIL_PASS,
+        },
+      });
+    }
+    const info = await transporter.sendMail({
+      from: process.env.EMAIL_FROM || 'PlaceAI <noreply@placeai.com>',
+      to,
+      subject,
+      html,
+    });
+    console.log(`📧 Email sent via Gmail to ${to}`);
+    return info;
+  }
+
+  // Fallback: Ethereal for local development
+  console.log('📧 No email config — using Ethereal test account');
+  const testAccount = await nodemailer.createTestAccount();
+  const testTransporter = nodemailer.createTransport({
+    host: 'smtp.ethereal.email',
+    port: 587,
     secure: false,
     auth: {
-      user: process.env.EMAIL_USER,
-      pass: process.env.EMAIL_PASS,
+      user: testAccount.user,
+      pass: testAccount.pass,
     },
   });
-  return transporter;
-}
 
-async function sendEmail({ to, subject, html }) {
-  const transport = await getTransporter();
-  const info = await transport.sendMail({
+  const info = await testTransporter.sendMail({
     from: process.env.EMAIL_FROM || 'PlaceAI <noreply@placeai.com>',
     to,
     subject,
     html,
   });
 
-  // If using Ethereal, print the preview URL to console
   const previewUrl = nodemailer.getTestMessageUrl(info);
-  if (previewUrl) {
-    console.log('\n📧 ============================================');
-    console.log(`📧 EMAIL SENT (Test Mode)`);
-    console.log(`📧 To: ${to}`);
-    console.log(`📧 Subject: ${subject}`);
-    console.log(`📧 Preview URL: ${previewUrl}`);
-    console.log('📧 ============================================\n');
-  }
+  console.log('\n📧 ============================================');
+  console.log(`📧 EMAIL SENT (Test Mode)`);
+  console.log(`📧 To: ${to}`);
+  console.log(`📧 Subject: ${subject}`);
+  console.log(`📧 Preview URL: ${previewUrl}`);
+  console.log('📧 ============================================\n');
   return info;
 }
 
@@ -66,7 +83,6 @@ function verificationEmailHTML(name, verifyUrl) {
     <table width="100%" cellpadding="0" cellspacing="0" style="background:#0f172a;padding:40px 20px;">
       <tr><td align="center">
         <table width="560" cellpadding="0" cellspacing="0" style="background:#1e293b;border-radius:16px;border:1px solid rgba(255,255,255,0.1);overflow:hidden;">
-          <!-- Header -->
           <tr>
             <td style="background:linear-gradient(135deg,#0ea5e9,#d946ef);padding:32px;text-align:center;">
               <div style="display:inline-flex;align-items:center;gap:10px;">
@@ -75,7 +91,6 @@ function verificationEmailHTML(name, verifyUrl) {
               </div>
             </td>
           </tr>
-          <!-- Body -->
           <tr>
             <td style="padding:40px 36px;">
               <h1 style="margin:0 0 12px;color:#f1f5f9;font-size:24px;font-weight:700;">Verify your email ✉️</h1>
@@ -97,7 +112,6 @@ function verificationEmailHTML(name, verifyUrl) {
               </p>
             </td>
           </tr>
-          <!-- Footer -->
           <tr>
             <td style="background:#0f172a;padding:20px 36px;text-align:center;">
               <p style="color:#334155;font-size:12px;margin:0;">© 2024 PlaceAI · AI-Powered Placement Portal</p>
