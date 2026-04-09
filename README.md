@@ -26,9 +26,9 @@ PlaceAI is a full-stack, production-ready placement portal with three role-based
 
 ## 🌐 Live Demo
 
-* 🔗 Frontend: *(Add your deployed link)*
-* 🔗 Backend API: *(Add link)*
-* 🔗 AI Service: *(Add link if deployed)*
+* 🔗 Frontend: https://placeai-silk.vercel.app/
+* 🔗 Backend API: https://placeai-backend-0trf.onrender.com
+* 🔗 AI Service: https://placeai-ai.onrender.com
 
 ---
 
@@ -386,19 +386,17 @@ placement-portal/
 
 ## 👨‍💻 Author
 
-**Jay K. Saini**
+**Jai K. Saini**
 
 * 💼 Full Stack Developer
-* 🌐 Portfolio: *(Add link)*
-* 📧 Email: *(Add email)*
+* 🌐 Portfolio: https://jksaini.indevs.in/
+* 📧 Email: jai.ksaini@outlook.com
 
 ---
 
 ## ⭐ Support
 
 If you like this project, give it a ⭐ on GitHub!
-
----
 
 
 ---
